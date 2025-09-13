@@ -20,6 +20,13 @@ import {
   Trash2
 } from "lucide-react";
 
+// Admin Components
+import { ManageBarbers } from "@/components/admin/ManageBarbers";
+import { ManageServices } from "@/components/admin/ManageServices";
+import { ManageAppointments } from "@/components/admin/ManageAppointments";
+import { ManageCustomers } from "@/components/admin/ManageCustomers";
+import { BarbershopSettings } from "@/components/admin/BarbershopSettings";
+
 export const BarbershopAdmin = () => {
   const { slug } = useParams();
   const location = useLocation();
@@ -192,141 +199,30 @@ export const BarbershopAdmin = () => {
 
           {/* Barbeiros */}
           <TabsContent value="barbers" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Barbeiros</h2>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar Barbeiro
-              </Button>
-            </div>
-            
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[1, 2, 3].map((barber) => (
-                <Card key={barber}>
-                  <CardHeader>
-                    <div className="flex items-center space-x-4">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Users className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">João Silva</CardTitle>
-                        <CardDescription>Barbeiro Sênior</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex justify-between items-center">
-                      <Badge variant="outline" className="bg-green-50 text-green-700">
-                        Disponível
-                      </Badge>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <ManageBarbers barbershopId={barbershop.id} />
           </TabsContent>
 
           {/* Serviços */}
           <TabsContent value="services" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Serviços</h2>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar Serviço
-              </Button>
-            </div>
-            
-            <div className="grid gap-4">
-              {[
-                { name: "Corte Tradicional", duration: "30min", price: "R$ 25,00" },
-                { name: "Corte + Barba", duration: "45min", price: "R$ 35,00" },
-                { name: "Apenas Barba", duration: "20min", price: "R$ 15,00" },
-              ].map((service, index) => (
-                <Card key={index}>
-                  <CardContent className="flex items-center justify-between p-6">
-                    <div className="flex items-center space-x-4">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Scissors className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">{service.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4 inline mr-1" />
-                          {service.duration}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <span className="font-semibold text-primary">{service.price}</span>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <ManageServices barbershopId={barbershop.id} />
           </TabsContent>
 
           {/* Agenda */}
           <TabsContent value="appointments" className="space-y-6">
-            <h2 className="text-2xl font-bold">Gerenciar Agenda</h2>
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center py-8">
-                  <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Sistema de Agenda</h3>
-                  <p className="text-muted-foreground">
-                    Aqui será implementado o sistema completo de gerenciamento de agenda
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <ManageAppointments barbershopId={barbershop.id} />
           </TabsContent>
 
           {/* Clientes */}
           <TabsContent value="customers" className="space-y-6">
-            <h2 className="text-2xl font-bold">Clientes</h2>
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center py-8">
-                  <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Gestão de Clientes</h3>
-                  <p className="text-muted-foreground">
-                    Visualize e gerencie todos os clientes cadastrados
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <ManageCustomers barbershopId={barbershop.id} />
           </TabsContent>
 
           {/* Configurações */}
           <TabsContent value="settings" className="space-y-6">
-            <h2 className="text-2xl font-bold">Configurações</h2>
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center py-8">
-                  <Settings className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Configurações da Barbearia</h3>
-                  <p className="text-muted-foreground">
-                    Configure horários, informações e outras configurações
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <BarbershopSettings 
+              barbershop={barbershop} 
+              onUpdate={() => getBarbershopBySlug(slug!)}
+            />
           </TabsContent>
         </Tabs>
       </main>
