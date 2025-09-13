@@ -19,7 +19,20 @@ export const getSubdomain = (): string | null => {
     return null;
   }
   
-  // For production (actual subdomains)
+  // For Vercel preview URLs (e.g., project-name-git-branch-username.vercel.app)
+  if (hostname.includes('vercel.app')) {
+    // Use path-based routing for Vercel until custom domain is setup
+    const path = window.location.pathname;
+    const segments = path.split('/').filter(Boolean);
+    
+    if (segments.length > 0 && segments[0] !== 'super-admin' && segments[0] !== 'auth') {
+      return segments[0];
+    }
+    
+    return null;
+  }
+  
+  // For production (actual subdomains like slug.yourdomain.com)
   const parts = hostname.split('.');
   if (parts.length > 2) {
     const subdomain = parts[0];
@@ -81,6 +94,12 @@ export const buildBarbershopUrl = (slug: string, path: string = ''): string => {
   
   // For development
   if (hostname === 'localhost' || hostname.includes('127.0.0.1')) {
+    const port = window.location.port ? `:${window.location.port}` : '';
+    return `${protocol}//${hostname}${port}/${slug}${path}`;
+  }
+  
+  // For Vercel preview URLs - use path-based routing
+  if (hostname.includes('vercel.app')) {
     const port = window.location.port ? `:${window.location.port}` : '';
     return `${protocol}//${hostname}${port}/${slug}${path}`;
   }
