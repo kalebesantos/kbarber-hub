@@ -212,5 +212,5 @@ Para suporte, entre em contato através de:
 
 <div align="center">
   <p>Desenvolvido com ❤️ para barbearias modernas</p>
-  <p>© 2024 BarberHub. Todos os direitos reservados.</p>
+  <p>© 2025 BarberHub. Todos os direitos reservados.</p>
 </div>
