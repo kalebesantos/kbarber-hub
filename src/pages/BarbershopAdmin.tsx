@@ -3,6 +3,7 @@ import { useParams, useLocation, Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { useBarbershop } from "@/hooks/use-barbershop";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,8 @@ import {
   Edit,
   Trash2
 } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 // Admin Components
 import { ManageBarbers } from "@/components/admin/ManageBarbers";
@@ -27,12 +30,27 @@ import { ManageAppointments } from "@/components/admin/ManageAppointments";
 import { ManageCustomers } from "@/components/admin/ManageCustomers";
 import { BarbershopSettings } from "@/components/admin/BarbershopSettings";
 
+interface DashboardStats {
+  appointmentsToday: number;
+  activeBarbers: number;
+  monthlyRevenue: number;
+  totalCustomers: number;
+  upcomingAppointments: any[];
+}
+
 export const BarbershopAdmin = () => {
   const { slug } = useParams();
   const location = useLocation();
   const { barbershop, getBarbershopBySlug } = useBarbershop();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
+    appointmentsToday: 0,
+    activeBarbers: 0,
+    monthlyRevenue: 0,
+    totalCustomers: 0,
+    upcomingAppointments: []
+  });
 
   useEffect(() => {
     if (slug) {
@@ -46,6 +64,84 @@ export const BarbershopAdmin = () => {
       setActiveTab(path);
     }
   }, [slug, location.pathname]);
+
+  useEffect(() => {
+    if (barbershop?.id) {
+      fetchDashboardStats();
+    }
+  }, [barbershop?.id]);
+
+  const fetchDashboardStats = async () => {
+    if (!barbershop?.id) return;
+
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+      const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0];
+
+      // Agendamentos de hoje
+      const { data: todayAppointments } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('barbershop_id', barbershop.id)
+        .eq('appointment_date', today);
+
+      // Barbeiros ativos
+      const { data: activeBarbers } = await supabase
+        .from('barbers')
+        .select('id')
+        .eq('barbershop_id', barbershop.id)
+        .eq('is_active', true);
+
+      // Receita do mês
+      const { data: monthlyAppointments } = await supabase
+        .from('appointments')
+        .select('service:services(price)')
+        .eq('barbershop_id', barbershop.id)
+        .gte('appointment_date', startOfMonth)
+        .lte('appointment_date', endOfMonth)
+        .eq('status', 'completed');
+
+      const monthlyRevenue = monthlyAppointments?.reduce((sum, appointment) => {
+        return sum + (appointment.service?.price || 0);
+      }, 0) || 0;
+
+      // Total de clientes únicos
+      const { data: uniqueCustomers } = await supabase
+        .from('appointments')
+        .select('customer_id')
+        .eq('barbershop_id', barbershop.id);
+
+      const totalCustomers = uniqueCustomers ? new Set(uniqueCustomers.map(a => a.customer_id)).size : 0;
+
+      // Próximos agendamentos
+      const { data: upcomingAppointments } = await supabase
+        .from('appointments')
+        .select(`
+          id,
+          start_time,
+          customer:profiles!customer_id(name),
+          service:services(name),
+          barber:barbers(name)
+        `)
+        .eq('barbershop_id', barbershop.id)
+        .gte('appointment_date', today)
+        .order('appointment_date')
+        .order('start_time')
+        .limit(3);
+
+      setDashboardStats({
+        appointmentsToday: todayAppointments?.length || 0,
+        activeBarbers: activeBarbers?.length || 0,
+        monthlyRevenue,
+        totalCustomers,
+        upcomingAppointments: upcomingAppointments || []
+      });
+
+    } catch (error) {
+      console.error('Erro ao buscar estatísticas:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -113,9 +209,9 @@ export const BarbershopAdmin = () => {
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">12</div>
+                  <div className="text-2xl font-bold">{dashboardStats.appointmentsToday}</div>
                   <p className="text-xs text-muted-foreground">
-                    +2 desde ontem
+                    Para o dia de hoje
                   </p>
                 </CardContent>
               </Card>
@@ -128,9 +224,9 @@ export const BarbershopAdmin = () => {
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">3</div>
+                  <div className="text-2xl font-bold">{dashboardStats.activeBarbers}</div>
                   <p className="text-xs text-muted-foreground">
-                    Todos disponíveis
+                    Disponíveis para agendamento
                   </p>
                 </CardContent>
               </Card>
@@ -143,9 +239,14 @@ export const BarbershopAdmin = () => {
                   <BarChart3 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">R$ 2.450</div>
+                  <div className="text-2xl font-bold">
+                    {new Intl.NumberFormat('pt-BR', { 
+                      style: 'currency', 
+                      currency: 'BRL' 
+                    }).format(dashboardStats.monthlyRevenue)}
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    +15% desde o mês passado
+                    Serviços completados
                   </p>
                 </CardContent>
               </Card>
@@ -153,14 +254,14 @@ export const BarbershopAdmin = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Clientes Cadastrados
+                    Clientes Únicos
                   </CardTitle>
                   <UserPlus className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">87</div>
+                  <div className="text-2xl font-bold">{dashboardStats.totalCustomers}</div>
                   <p className="text-xs text-muted-foreground">
-                    +5 esta semana
+                    Total de clientes
                   </p>
                 </CardContent>
               </Card>
@@ -175,23 +276,32 @@ export const BarbershopAdmin = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {[1, 2, 3].map((item) => (
-                    <div key={item} className="flex items-center space-x-4 p-4 border rounded-lg">
-                      <div className="flex-shrink-0">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Scissors className="h-5 w-5 text-primary" />
+                  {dashboardStats.upcomingAppointments.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Calendar className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                      <p>Nenhum agendamento próximo</p>
+                    </div>
+                  ) : (
+                    dashboardStats.upcomingAppointments.map((appointment) => (
+                      <div key={appointment.id} className="flex items-center space-x-4 p-4 border rounded-lg">
+                        <div className="flex-shrink-0">
+                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Scissors className="h-5 w-5 text-primary" />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium">{appointment.customer?.name || 'Cliente'}</p>
+                          <p className="text-sm text-muted-foreground">{appointment.service?.name || 'Serviço'}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">
+                            {appointment.start_time ? format(new Date(`2000-01-01T${appointment.start_time}`), 'HH:mm') : ''}
+                          </p>
+                          <p className="text-sm text-muted-foreground">{appointment.barber?.name || 'Barbeiro'}</p>
                         </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium">João Silva</p>
-                        <p className="text-sm text-muted-foreground">Corte + Barba</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">14:30</p>
-                        <p className="text-sm text-muted-foreground">Pedro Santos</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>

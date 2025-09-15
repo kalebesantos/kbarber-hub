@@ -43,21 +43,35 @@ export const ManageCustomers = ({ barbershopId }: ManageCustomersProps) => {
         .select(`
           customer_id,
           appointment_date,
-          service:services(price),
-          customer:profiles!appointments_customer_id_fkey(id, user_id, name, phone, avatar_url, created_at)
+          status,
+          services(price)
         `)
         .eq('barbershop_id', barbershopId);
 
       if (appointmentsError) throw appointmentsError;
 
+      // Buscar dados dos profiles dos clientes
+      const customerIds = [...new Set(appointments?.map(a => a.customer_id))];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, user_id, name, phone, avatar_url, created_at')
+        .in('id', customerIds);
+
+      if (profilesError) throw profilesError;
+
       // Agrupar dados por cliente
       const customerMap = new Map();
 
-      appointments?.forEach(appointment => {
-        const customer = appointment.customer;
-        if (!customer) return;
+      // Criar mapa de profiles por ID
+      const profilesMap = new Map();
+      profiles?.forEach(profile => {
+        profilesMap.set(profile.id, profile);
+      });
 
-        const customerId = customer.id;
+      appointments?.forEach(appointment => {
+        const customerId = appointment.customer_id;
+        const customer = profilesMap.get(customerId);
+        if (!customer) return;
         
         if (!customerMap.has(customerId)) {
           customerMap.set(customerId, {
@@ -81,9 +95,9 @@ export const ManageCustomers = ({ barbershopId }: ManageCustomersProps) => {
           customerData.lastAppointment = appointment.appointment_date;
         }
         
-        // Somar valor total gasto
-        if (appointment.service?.price) {
-          customerData.totalSpent += appointment.service.price;
+        // Somar valor total gasto (apenas para agendamentos completados)
+        if (appointment.status === 'completed' && appointment.services?.price) {
+          customerData.totalSpent += appointment.services.price;
         }
       });
 
