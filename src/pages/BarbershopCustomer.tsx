@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PremiumButton } from "@/components/ui/premium-button";
+import { BookingModal } from "@/components/booking/BookingModal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,8 @@ export const BarbershopCustomer = () => {
   const [services, setServices] = useState([]);
   const [barbers, setBarbers] = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [selectedService, setSelectedService] = useState<any>(null);
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
 
   const [authForm, setAuthForm] = useState({
     email: "",
@@ -127,6 +130,23 @@ export const BarbershopCustomer = () => {
   const handleSignOut = async () => {
     await signOut();
     setShowAuth(true);
+    setAuthForm({ email: "", password: "", name: "" });
+    toast({
+      title: "Logout realizado",
+      description: "Você foi desconectado com sucesso.",
+    });
+  };
+
+  const handleBookService = (service: any) => {
+    setSelectedService(service);
+    setBookingModalOpen(true);
+  };
+
+  const handleBookingComplete = () => {
+    setBookingModalOpen(false);
+    setSelectedService(null);
+    // Refresh appointments
+    fetchBarbershopData();
   };
 
   if (barbershopLoading || authLoading) {
@@ -328,7 +348,11 @@ export const BarbershopCustomer = () => {
                           <p className="text-lg font-bold text-primary">
                             R$ {service.price.toFixed(2)}
                           </p>
-                          <PremiumButton variant="outline" size="sm">
+                          <PremiumButton 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleBookService(service)}
+                          >
                             Agendar
                           </PremiumButton>
                         </div>
@@ -389,6 +413,19 @@ export const BarbershopCustomer = () => {
           </div>
         </div>
       </main>
+
+      {/* Booking Modal */}
+      {selectedService && (
+        <BookingModal
+          isOpen={bookingModalOpen}
+          onClose={() => {
+            setBookingModalOpen(false);
+            setSelectedService(null);
+          }}
+          service={selectedService}
+          barbershopId={barbershop?.id || ""}
+        />
+      )}
 
       <Footer />
     </div>

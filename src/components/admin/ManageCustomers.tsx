@@ -37,7 +37,7 @@ export const ManageCustomers = ({ barbershopId }: ManageCustomersProps) => {
 
   const fetchCustomers = async () => {
     try {
-      // Buscar clientes que fizeram agendamentos nesta barbearia
+      // Buscar agendamentos que existem para esta barbearia
       const { data: appointments, error: appointmentsError } = await supabase
         .from('appointments')
         .select(`
@@ -50,8 +50,14 @@ export const ManageCustomers = ({ barbershopId }: ManageCustomersProps) => {
 
       if (appointmentsError) throw appointmentsError;
 
+      if (!appointments || appointments.length === 0) {
+        setCustomers([]);
+        setLoading(false);
+        return;
+      }
+
       // Buscar dados dos profiles dos clientes
-      const customerIds = [...new Set(appointments?.map(a => a.customer_id))];
+      const customerIds = [...new Set(appointments.map(a => a.customer_id))];
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, user_id, name, phone, avatar_url, created_at')
