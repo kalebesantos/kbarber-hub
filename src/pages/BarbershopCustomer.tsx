@@ -13,7 +13,7 @@ import { useBarbershop } from "@/hooks/use-barbershop";
 import { getSubdomain } from "@/utils/subdomain";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Scissors, MapPin, Phone, Clock, User, LogOut, Trash2 } from "lucide-react";
+import { Calendar, Scissors, MapPin, Phone, Clock, User, LogOut, Trash2, ExternalLink } from "lucide-react";
 
 export const BarbershopCustomer = () => {
   const navigate = useNavigate();
@@ -179,6 +179,13 @@ export const BarbershopCustomer = () => {
     }
   };
 
+  const openInGoogleMaps = () => {
+    if (barbershop?.address?.trim()) {
+      const encodedAddress = encodeURIComponent(barbershop.address);
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
+    }
+  };
+
   if (barbershopLoading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-dark">
@@ -333,9 +340,20 @@ export const BarbershopCustomer = () => {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {barbershop.address && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    {barbershop.address}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4" />
+                      {barbershop.address}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={openInGoogleMaps}
+                      className="flex items-center gap-2"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Ver no Google Maps
+                    </Button>
                   </div>
                 )}
                 {barbershop.phone && (

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Settings, Clock, MapPin, Phone, Save } from "lucide-react";
+import { Settings, Clock, MapPin, Phone, Save, ExternalLink, Map } from "lucide-react";
 import { Json } from "@/integrations/supabase/types";
 
 interface BarbershopData {
@@ -117,6 +117,28 @@ export const BarbershopSettings = ({ barbershop, onUpdate }: BarbershopSettingsP
     }));
   };
 
+  const openInGoogleMaps = () => {
+    if (formData.address.trim()) {
+      const encodedAddress = encodeURIComponent(formData.address);
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
+    } else {
+      toast({
+        title: "Endereço necessário",
+        description: "Digite um endereço antes de abrir no Google Maps.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const searchOnGoogleMaps = () => {
+    if (formData.address.trim()) {
+      const encodedAddress = encodeURIComponent(formData.address);
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
+    } else {
+      window.open('https://www.google.com/maps', '_blank');
+    }
+  };
+
   const getTimeValue = (day: string, field: 'open' | 'close') => {
     return openingHours[day]?.[field] || "";
   };
@@ -192,16 +214,45 @@ export const BarbershopSettings = ({ barbershop, onUpdate }: BarbershopSettingsP
 
           <div>
             <Label htmlFor="address">Endereço</Label>
-            <div className="relative">
-              <MapPin className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
-              <Textarea
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="pl-10"
-                placeholder="Rua, número, bairro, cidade..."
-                rows={2}
-              />
+            <div className="space-y-2">
+              <div className="relative">
+                <MapPin className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
+                <Textarea
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  className="pl-10"
+                  placeholder="Rua, número, bairro, cidade..."
+                  rows={2}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={searchOnGoogleMaps}
+                  className="flex items-center gap-2"
+                >
+                  <Map className="h-4 w-4" />
+                  Buscar no Google Maps
+                </Button>
+                {formData.address.trim() && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={openInGoogleMaps}
+                    className="flex items-center gap-2"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Ver no Maps
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Digite o endereço completo para que os clientes possam encontrar sua barbearia facilmente
+              </p>
             </div>
           </div>
         </CardContent>
