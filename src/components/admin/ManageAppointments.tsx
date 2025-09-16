@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Clock, User, Scissors, Filter, Search } from "lucide-react";
+import { Calendar, Clock, User, Scissors, Filter, Search, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -117,6 +117,35 @@ export const ManageAppointments = ({ barbershopId }: ManageAppointmentsProps) =>
       toast({
         title: "Erro",
         description: "Não foi possível atualizar o status.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteAppointment = async (id: string, customerName: string) => {
+    if (!confirm(`Tem certeza que deseja excluir o agendamento de ${customerName}?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Agendamento excluído com sucesso!",
+      });
+
+      fetchAppointments();
+    } catch (error) {
+      console.error('Erro ao excluir agendamento:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir o agendamento.",
         variant: "destructive",
       });
     }
@@ -298,6 +327,14 @@ export const ManageAppointments = ({ barbershopId }: ManageAppointmentsProps) =>
                         ))}
                       </SelectContent>
                     </Select>
+
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteAppointment(appointment.id, appointment.customer?.name || 'Cliente')}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
 

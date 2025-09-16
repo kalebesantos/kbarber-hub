@@ -13,7 +13,7 @@ import { useBarbershop } from "@/hooks/use-barbershop";
 import { getSubdomain } from "@/utils/subdomain";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Scissors, MapPin, Phone, Clock, User, LogOut } from "lucide-react";
+import { Calendar, Scissors, MapPin, Phone, Clock, User, LogOut, Trash2 } from "lucide-react";
 
 export const BarbershopCustomer = () => {
   const navigate = useNavigate();
@@ -147,6 +147,36 @@ export const BarbershopCustomer = () => {
     setSelectedService(null);
     // Refresh appointments
     fetchBarbershopData();
+  };
+
+  const deleteAppointment = async (appointmentId: string, serviceName: string) => {
+    if (!confirm(`Tem certeza que deseja cancelar o agendamento do serviço "${serviceName}"?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .delete()
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Agendamento cancelado",
+        description: "Seu agendamento foi cancelado com sucesso.",
+      });
+
+      // Refresh appointments
+      fetchBarbershopData();
+    } catch (error) {
+      console.error('Erro ao cancelar agendamento:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível cancelar o agendamento.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (barbershopLoading || authLoading) {
@@ -379,10 +409,10 @@ export const BarbershopCustomer = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {appointments.map((appointment: any) => (
+                     {appointments.map((appointment: any) => (
                       <div key={appointment.id} className="p-4 rounded-lg bg-muted/50 border border-border">
                         <div className="flex justify-between items-start">
-                          <div>
+                          <div className="flex-1">
                             <h4 className="font-semibold">{appointment.services?.name}</h4>
                             <p className="text-sm text-muted-foreground">
                               Com {appointment.barbers?.name}
@@ -391,21 +421,32 @@ export const BarbershopCustomer = () => {
                               {new Date(appointment.appointment_date).toLocaleDateString()} - {appointment.start_time}
                             </p>
                           </div>
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            appointment.status === 'scheduled' ? 'bg-primary/20 text-primary' :
-                            appointment.status === 'confirmed' ? 'bg-green-500/20 text-green-400' :
-                            appointment.status === 'completed' ? 'bg-blue-500/20 text-blue-400' :
-                            'bg-red-500/20 text-red-400'
-                          }`}>
-                            {appointment.status === 'scheduled' ? 'Agendado' :
-                             appointment.status === 'confirmed' ? 'Confirmado' :
-                             appointment.status === 'completed' ? 'Concluído' :
-                             'Cancelado'
-                            }
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              appointment.status === 'scheduled' ? 'bg-primary/20 text-primary' :
+                              appointment.status === 'confirmed' ? 'bg-green-500/20 text-green-400' :
+                              appointment.status === 'completed' ? 'bg-blue-500/20 text-blue-400' :
+                              'bg-red-500/20 text-red-400'
+                            }`}>
+                              {appointment.status === 'scheduled' ? 'Agendado' :
+                               appointment.status === 'confirmed' ? 'Confirmado' :
+                               appointment.status === 'completed' ? 'Concluído' :
+                               'Cancelado'
+                              }
+                            </span>
+                            {appointment.status !== 'completed' && appointment.status !== 'cancelled' && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => deleteAppointment(appointment.id, appointment.services?.name || 'serviço')}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    ))}
+                     ))}
                   </div>
                 )}
               </CardContent>
